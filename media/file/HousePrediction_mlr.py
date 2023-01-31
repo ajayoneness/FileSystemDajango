@@ -1,0 +1,59 @@
+# House price using Backward Elimination
+
+# import the datastet
+
+import numpy as np
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+#matplotlib inline
+
+
+# importing dataset using pandas 
+
+HousePrice = pd.read_csv(r"C:\Users\ajayo\Downloads\kc_house_data.csv")
+ 
+
+HousePrice = HousePrice.drop(['id', 'date'], axis =1)
+
+# seprating independent and dependent variable
+
+x = HousePrice.iloc[:, 1:].values
+y = HousePrice.iloc[:, 0].values
+
+# splitting dataset into training and testing dataset
+from sklearn.model_selection import train_test_split
+x_train, x_test, y_train, y_test = train_test_split(x, y)
+  
+                                    
+  # Backward Elimination
+import statsmodels.formula.api as sm
+def BackwardElimination(x, SL):
+    numVars = len(x[0])
+    temp = np.zeros((21613, 19)).astype(int) #  (21613, 19) are the data and attributes
+    for i in range(0, numVars):
+        regressor_OLS = sm.ols(y, x).fit()
+        maxVar =max(regressor_OLS.pvalues).astype(float)
+        adjR_before = regressor_OLS.rsquared_adj.astype(float)
+        if maxVar > SL:
+            for j in range(0, numVars - i):
+                if (regressor_OLS.pvalues[j].astypes(float) == maxVar):
+                    temp[:, j] = x[:, j]
+                    x = np.delete(x, j, 1)
+                    tmp_regressor = sm.OLS(y, x).fit()
+                    adjR_after = tmp_regressor.rsquared_adj.astype(float)
+                    
+                    if (adjR_before >= adjR_after):
+                        x_rollback = np.hstack((x, temp[:, [0, j]]))
+                        x_rollback = np.delete(x_rollback, j, 1)
+                        print(regressor_OLS.summary())
+                        return x_rollback
+                    else:
+                        continue
+    regressor_OLS.summary()
+    return x
+
+SL = 0.05
+X_opt = x[:, [i for i in range(18)]]
+X_Modeled = BackwardElimination(X_opt, SL)
